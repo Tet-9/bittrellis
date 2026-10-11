@@ -1,0 +1,34 @@
+schema: bittrellis/manifest@2
+track: HPC-02
+name: pr148-kq-imatrix-downs-qkv
+description: >
+  #148 (#142 with every kq_rtn tensor re-encoded by kq_imat: RP-KL 0.0598, decode 447.2, 23.42 GiB) with the routed
+  expert downs and the recurrent qkv on kq_imatrix instead, the swap #146 made on #129 (0.0612 to 0.0547) and #158
+  made on #147 (0.0855 to 0.0807). Formats are #148's, so decode, prefill and memory should not move; only the
+  rounding of the two largest Q4_K tensor groups changes. The recurrent z and out, lm_head and the embeddings stay
+  on kq_imat as in #158. Expect about 0.005 lower RP-KL.
+authors: [Tet-9]
+default: Q8_0
+encoders: {Q4_K: unsloth_ud, Q5_K: unsloth_ud, Q6_K: unsloth_ud, Q8_0: unsloth_ud}
+rules:
+  - match: "L*.exps.gate"
+    format: Q4_K
+  - match: "L*.exps.up"
+    format: Q4_K
+  - match: "L*.exps.down"
+    format: Q4_K
+    encoder: kq_imatrix
+  - match: "L*.gdn.qkv"
+    format: Q4_K
+    encoder: kq_imatrix
+  - match: "L*.gdn.z"
+    layers: "20-39"
+    format: Q4_K
+    encoder: kq_imat
+  - match: "L*.gdn.out"
+    layers: "20-39"
+    format: Q4_K
+    encoder: kq_imat
+modules:
+  lm_head: {format: Q4_K, encoder: kq_imat}
+  embed: {format: Q4_K, encoder: kq_imat}
